@@ -116,47 +116,46 @@ def identify_patterns(data):
 # Streamlit app setup
 st.title('Stock Pattern Identification and Prediction')
 
-# Load the stock symbols from the uploaded file
-uploaded_file = st.file_uploader("Choose an Excel file with stock symbols", type="xlsx")
-if uploaded_file is not None:
-    df_symbols = pd.read_excel(uploaded_file)
-    symbols = df_symbols['Symbol'].tolist()
+# Load the stock symbols from the 'stocks.xlsx' file available in the same directory
+input_file = 'stocks.xlsx'  # Assuming this file is in the root directory
+df_symbols = pd.read_excel(input_file)
+symbols = df_symbols['Symbol'].tolist()
 
-    results_list = []
+results_list = []
 
-    for symbol in symbols:
-        try:
-            stock_data = yf.download(symbol, period='1y', interval='1d')
-            if not stock_data.empty and 'Close' in stock_data.columns:
-                pattern, strength, bullish_percentage, bearish_percentage, duration, current_price, future_price_estimate, breakout_date, breakout_accuracy, score = identify_patterns(stock_data)
-                results_list.append({'Symbol': symbol, 'Pattern': pattern, 'Strength (%)': strength, 'Bullish Percentage': bullish_percentage, 'Bearish Percentage': bearish_percentage, 'Predicted Duration': duration, 'Current Price': current_price, 'Future Price Estimate': future_price_estimate, 'Breakout Date': breakout_date, 'Breakout Accuracy (%)': breakout_accuracy, 'Score': score})
-            else:
-                results_list.append({'Symbol': symbol, 'Pattern': 'No data or missing columns', 'Strength (%)': 'N/A', 'Bullish Percentage': 'N/A', 'Bearish Percentage': 'N/A', 'Predicted Duration': 'N/A', 'Current Price': 'N/A', 'Future Price Estimate': 'N/A', 'Breakout Date': 'N/A', 'Breakout Accuracy (%)': 'N/A', 'Score': 'N/A'})
-        except Exception as e:
-            results_list.append({'Symbol': symbol, 'Pattern': f'Error: {e}', 'Strength (%)': 'N/A', 'Bullish Percentage': 'N/A', 'Bearish Percentage': 'N/A', 'Predicted Duration': 'N/A', 'Current Price': 'N/A', 'Future Price Estimate': 'N/A', 'Breakout Date': 'N/A', 'Breakout Accuracy (%)': 'N/A', 'Score': 'N/A'})
+for symbol in symbols:
+    try:
+        stock_data = yf.download(symbol, period='1y', interval='1d')
+        if not stock_data.empty and 'Close' in stock_data.columns:
+            pattern, strength, bullish_percentage, bearish_percentage, duration, current_price, future_price_estimate, breakout_date, breakout_accuracy, score = identify_patterns(stock_data)
+            results_list.append({'Symbol': symbol, 'Pattern': pattern, 'Strength (%)': strength, 'Bullish Percentage': bullish_percentage, 'Bearish Percentage': bearish_percentage, 'Predicted Duration': duration, 'Current Price': current_price, 'Future Price Estimate': future_price_estimate, 'Breakout Date': breakout_date, 'Breakout Accuracy (%)': breakout_accuracy, 'Score': score})
+        else:
+            results_list.append({'Symbol': symbol, 'Pattern': 'No data or missing columns', 'Strength (%)': 'N/A', 'Bullish Percentage': 'N/A', 'Bearish Percentage': 'N/A', 'Predicted Duration': 'N/A', 'Current Price': 'N/A', 'Future Price Estimate': 'N/A', 'Breakout Date': 'N/A', 'Breakout Accuracy (%)': 'N/A', 'Score': 'N/A'})
+    except Exception as e:
+        results_list.append({'Symbol': symbol, 'Pattern': f'Error: {e}', 'Strength (%)': 'N/A', 'Bullish Percentage': 'N/A', 'Bearish Percentage': 'N/A', 'Predicted Duration': 'N/A', 'Current Price': 'N/A', 'Future Price Estimate': 'N/A', 'Breakout Date': 'N/A', 'Breakout Accuracy (%)': 'N/A', 'Score': 'N/A'})
 
-    # Convert to DataFrame
-    results = pd.DataFrame(results_list)
-    results['Score'] = pd.to_numeric(results['Score'], errors='coerce')
-    results_sorted = results.sort_values(by='Score', ascending=False)
+# Convert to DataFrame
+results = pd.DataFrame(results_list)
+results['Score'] = pd.to_numeric(results['Score'], errors='coerce')
+results_sorted = results.sort_values(by='Score', ascending=False)
 
-    # Show Top 100 and 200 Stocks
-    st.subheader('Top 100 Stocks Based on Score')
-    st.write(results_sorted.head(100))
+# Show Top 100 and 200 Stocks
+st.subheader('Top 100 Stocks Based on Score')
+st.write(results_sorted.head(100))
 
-    # Add Stop Loss (5%) for the top 200 stocks
-    results_sorted['Stop Loss Price'] = results_sorted['Current Price'] * 0.95
-    st.subheader('Top 200 Stocks with Stop Loss')
-    st.write(results_sorted.head(200))
+# Add Stop Loss (5%) for the top 200 stocks
+results_sorted['Stop Loss Price'] = results_sorted['Current Price'] * 0.95
+st.subheader('Top 200 Stocks with Stop Loss')
+st.write(results_sorted.head(200))
 
-    # Option to download the results as an Excel file
-    output_file = 'stocks_with_patterns_and_predictions.xlsx'
-    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-        results_sorted.to_excel(writer, index=False)
+# Option to download the results as an Excel file
+output_file = 'stocks_with_patterns_and_predictions.xlsx'
+with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+    results_sorted.to_excel(writer, index=False)
 
-    st.download_button(
-        label="Download Results as Excel",
-        data=open(output_file, 'rb'),
-        file_name=output_file,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+st.download_button(
+    label="Download Results as Excel",
+    data=open(output_file, 'rb'),
+    file_name=output_file,
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
